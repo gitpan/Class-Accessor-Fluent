@@ -1,4 +1,8 @@
 Revision history for Class-Accessor-Fluent
 
+0.02 2008/07/13
+  - added Tie::StdHash as a base to encourage to use
+    accessors/mutators to get/set values. thanks gfx.
+
 0.01 2008/07/10
   - initial release

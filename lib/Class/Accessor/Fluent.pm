@@ -2,9 +2,12 @@ package Class::Accessor::Fluent;
 
 use strict;
 use warnings;
+use Carp;
+use Tie::Hash;
+use base qw( Tie::StdHash );
 use Sub::Install;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub mk_fluent_accessors {
   my ($class, @names) = @_;
@@ -22,6 +25,11 @@ sub mk_fluent_accessors {
           $self->{$name} = [@_];
         }
         else {
+          if ( ref $self->{$name} eq 'ARRAY' ) {
+            return wantarray
+              ? @{ $self->{$name} }
+              : $self->{$name};  # should be $self->{$name}->[0] ?
+          }
           return $self->{$name};
         }
 
@@ -31,12 +39,34 @@ sub mk_fluent_accessors {
       as   => $name,
     });
   }
+  my %fields = map { $_ => 1 } @names;
+  Sub::Install::install_sub({
+    code => sub { wantarray ? keys %fields : \%fields },
+    into => $class,
+    as   => '_fields',
+  });
 }
 
 sub new {
-  my ($class, %self) = @_;
+  my ($class, %hash) = @_;
 
+  my %self;
+  foreach my $field ( $class->_fields ) {
+    $self{$field} = delete $hash{$field};
+  }
+  if ( %hash ) {
+    croak "not allowed: ".(join ", ", sort { $a cmp $b } keys %hash);
+  }
+  tie %self, $class;
   bless \%self, $class;
+}
+
+sub STORE {
+  my ($self, $key, $value) = @_;
+
+  croak "$key is not allowed" unless $self->_fields->{$key};
+
+  $self->{$key} = $value;
 }
 
 1;
@@ -82,7 +112,15 @@ Class::Accessor::Fluent - do you like fluent interface?
     foo
     bar
 
-  See the point?
+  note that you can't set undeclared key/value combos:
+
+    my $app = MyApp->new( not_allowed => 1 );  # croaks
+    my $app = MyApp->new;
+       $app->{not_allowed} = 1;  # croaks
+
+  so you should always use set/get values via accessors/mutators.
+
+  see the point?
 
 =head1 DESCRIPTION
 
@@ -100,7 +138,9 @@ basic constructor that generates a hash based object.
 
 =head1 SEE ALSO
 
-L<Class::Accessor::Fast>
+L<Class::Accessor::Fast>,
+
+L<Class::Accessor::Chained>,
 
 L<http://d.hatena.ne.jp/antipop/20080710/1215626395> (Japanese blog entry)
 

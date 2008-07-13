@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Class-Accessor-Fluent
-version:             0.01
+version:             0.02
 abstract:            do you like fluent interface?
 license:             perl
 author:              

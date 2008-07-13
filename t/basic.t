@@ -37,3 +37,14 @@ package main;
   my $ret = Class::Accessor::Fluent::Test::Extended->foo('foo')->bar('bar')->test;
   ok $ret eq 'foo bar', "from extended class";
 }
+
+{
+  my $self = Class::Accessor::Fluent::Test::Base->new;
+  eval { $self->{not_allowed} = 1; };
+  ok $@ =~ /not allowed/, 'prohibit undeclared keys';
+}
+
+{
+  eval {Class::Accessor::Fluent::Test::Base->new(not_allowed => 1) };
+  ok $@ =~ /not allowed/, 'prohibit undeclared keys';
+}
